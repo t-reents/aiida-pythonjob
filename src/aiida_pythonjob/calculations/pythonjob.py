@@ -170,6 +170,12 @@ class PythonJob(CalcJob):
             invalidates_cache=True,
             message="The script failed for an unknown reason.\n{exception}\n{traceback}",
         )
+        spec.exit_code(
+            329,
+            "ERROR_IMPORT_MPI4PY_FAILED",
+            invalidates_cache=True,
+            message="Trying to run with MPI support, but importing mpi4py failed.\n{exception}\n{traceback}",
+        )
 
     def get_function_name(self) -> str:
         """Return the name of the function to run."""
@@ -233,6 +239,7 @@ class PythonJob(CalcJob):
             pickled_function=pickled_function,
             source_code=source_code,
             function_name=function_name,
+            withmpi=self.inputs.metadata.options.get("withmpi", False),
         )
 
         # Write the script to the working folder
@@ -317,7 +324,10 @@ class PythonJob(CalcJob):
         local_copy_list.append((file_data.uuid, file_data.filename, filename))
 
         codeinfo = CodeInfo()
-        codeinfo.stdin_name = self.options.input_filename
+        if self.options.get("withmpi", False):
+            codeinfo.cmdline_params = [self.options.input_filename]
+        else:
+            codeinfo.stdin_name = self.options.input_filename
         codeinfo.stdout_name = self.options.output_filename
         codeinfo.code_uuid = self.inputs.code.uuid
 

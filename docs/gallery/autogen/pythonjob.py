@@ -234,50 +234,25 @@ result, node = run_get_node(PythonJob, inputs=inputs)
 print("retrieved files: ", result["retrieved"].list_object_names())
 
 ######################################################################
-# Namespace Output
+# Using MPI for parallel execution
 # --------------
+# If your function uses MPI for parallel execution, you can set the `withmpi`
+# option to `True` in the `metadata.options` dictionary. This will ensure that
+# the job is executed using `mpirun` or an equivalent command on the (remote)
+# computer.
 #
-# The `PythonJob` allows users to define namespace outputs. A namespace output
-# is a dictionary with keys and values returned by a function. Each value in
-# this dictionary will be serialized to AiiDA data, and the key-value pair
-# will be stored in the database.
+# .. code-block:: python
 #
-# Why Use Namespace Outputs?
+#     metadata = {
+#         "options": {
+#             'withmpi': True,
+#         }
+#     }
 #
-# - **Dynamic and Flexible**: The keys and values in the namespace output are not fixed and can change based on the task's execution. # noqa
-# - **Querying**: The data in the namespace output is stored as an AiiDA data node, allowing for easy querying and retrieval. # noqa
-# - **Data Provenance**: When the data is used as input for subsequent tasks, the origin of data is tracked.
 #
-# For example: Consider a molecule adsorption calculation where the namespace
-# output stores the surface slabs of the molecule adsorbed on different surface
-# sites. The number of surface slabs can vary depending on the surface. These
-# output surface slabs can be utilized as input to the next task to calculate the energy.
-
-from ase import Atoms  # noqa: E402
-from ase.build import bulk  # noqa: E402
-
-
-def generate_structures(structure: Atoms, factor_lst: list) -> dict:
-    """Scale the structure by the given factor_lst."""
-    scaled_structures = {}
-    for i in range(len(factor_lst)):
-        atoms = structure.copy()
-        atoms.set_cell(atoms.cell * factor_lst[i], scale_atoms=True)
-        scaled_structures[f"s_{i}"] = atoms
-    return {"scaled_structures": scaled_structures}
-
-
-inputs = prepare_pythonjob_inputs(
-    generate_structures,
-    function_inputs={"structure": bulk("Al"), "factor_lst": [0.95, 1.0, 1.05]},
-    output_ports=[{"name": "scaled_structures", "identifier": "namespace"}],
-)
-
-result, node = run_get_node(PythonJob, inputs=inputs)
-print("scaled_structures: ")
-for key, value in result["scaled_structures"].items():
-    print(key, value)
-
+#
+# **Note:** In order to run MPI jobs, the remote computer must have installed
+# the `mpi4py` package in the Python environment.
 
 ######################################################################
 # What if my calculation fails?
